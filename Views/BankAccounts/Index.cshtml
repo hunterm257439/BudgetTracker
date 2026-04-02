@@ -1,0 +1,61 @@
+@model IEnumerable<BudgetTracker.Models.BankAccount>
+@{
+    ViewData["Title"] = "Bank Accounts";
+
+    // Current balance = StartingBalance + all Inflow - all Outflow
+    decimal GetBalance(BudgetTracker.Models.BankAccount account)
+    {
+        return account.StartingBalance
+            + account.Transactions.Sum(t => t.Inflow ?? 0)
+            - account.Transactions.Sum(t => t.Outflow ?? 0);
+    }
+
+    var nonInvestmentTotal = Model
+        .Where(a => a.AccountType != BudgetTracker.Models.AccountType.Investment)
+        .Sum(a => GetBalance(a));
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bank Accounts</h2>
+    <a asp-action="Create" class="btn btn-primary">+ Add Account</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>Available to Budget:</strong> @nonInvestmentTotal.ToString("C")
+    <small class="text-muted ms-2">(sum of all non-Investment accounts)</small>
+</div>
+
+<table class="table table-hover">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Starting Balance</th>
+            <th>Current Balance</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var account in Model)
+        {
+            var balance = GetBalance(account);
+            <tr>
+                <td>
+                    <a asp-action="Details" asp-route-id="@account.Id">@account.Name</a>
+                </td>
+                <td>@account.AccountType</td>
+                <td>@account.StartingBalance.ToString("C")</td>
+                <td class="@(balance < 0 ? "text-danger" : "")">@balance.ToString("C")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@account.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@account.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No bank accounts yet. <a asp-action="Create">Add one</a> to get started.</p>
+}

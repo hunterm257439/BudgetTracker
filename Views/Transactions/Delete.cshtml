@@ -1,0 +1,42 @@
+@model BudgetTracker.Models.Transaction
+@{
+    ViewData["Title"] = "Delete Transaction";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Delete Transaction</h2>
+        <div class="alert alert-danger">
+            Are you sure you want to delete this transaction?
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Date</dt>
+            <dd class="col-sm-9">@Model.Date.ToString("MM/dd/yyyy")</dd>
+            <dt class="col-sm-3">Payee</dt>
+            <dd class="col-sm-9">@Model.Payee</dd>
+            <dt class="col-sm-3">Account</dt>
+            <dd class="col-sm-9">@Model.BankAccount?.Name</dd>
+            <dt class="col-sm-3">Subcategory</dt>
+            <dd class="col-sm-9">@Model.Subcategory?.Category?.Name &rsaquo; @Model.Subcategory?.Name</dd>
+            @if (Model.Outflow.HasValue)
+            {
+                <dt class="col-sm-3">Outflow</dt>
+                <dd class="col-sm-9 text-danger">@Model.Outflow.Value.ToString("C")</dd>
+            }
+            @if (Model.Inflow.HasValue)
+            {
+                <dt class="col-sm-3">Inflow</dt>
+                <dd class="col-sm-9 text-success">@Model.Inflow.Value.ToString("C")</dd>
+            }
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

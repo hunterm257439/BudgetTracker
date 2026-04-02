@@ -1,0 +1,178 @@
+@model BudgetTracker.Models.ViewModels.BudgetViewModel
+@{
+    ViewData["Title"] = "Budget — " + Model.MonthName;
+
+    string FormatAmount(decimal amount) => amount.ToString("C");
+
+    string AmountClass(decimal amount) =>
+        amount < 0 ? "text-danger" : (amount > 0 ? "" : "text-muted");
+
+    var prevMonth = Model.Month == 1 ? 12 : Model.Month - 1;
+    var prevYear  = Model.Month == 1 ? Model.Year - 1 : Model.Year;
+    var nextMonth = Model.Month == 12 ? 1 : Model.Month + 1;
+    var nextYear  = Model.Month == 12 ? Model.Year + 1 : Model.Year;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Budget</h2>
+    <div class="d-flex align-items-center gap-3">
+        <a asp-action="Index" asp-route-month="@prevMonth" asp-route-year="@prevYear"
+           class="btn btn-outline-secondary btn-sm">&larr;</a>
+        <span class="fw-semibold">@Model.MonthName</span>
+        <a asp-action="Index" asp-route-month="@nextMonth" asp-route-year="@nextYear"
+           class="btn btn-outline-secondary btn-sm">&rarr;</a>
+    </div>
+</div>
+
+<div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <strong>Available to Budget:</strong>
+        <span class="fs-5 ms-2 @AmountClass(Model.AvailableToBudget)">@FormatAmount(Model.AvailableToBudget)</span>
+        <small class="text-muted ms-2">(account balances minus total assigned)</small>
+    </div>
+    <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary btn-sm">+ Add Transaction</a>
+</div>
+
+@if (!Model.Categories.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <p>No categories yet.</p>
+        <a asp-controller="Categories" asp-action="Create" class="btn btn-outline-primary">Add a Category</a>
+    </div>
+}
+else
+{
+    <p class="text-muted small mb-2">Click any <strong>Assigned</strong> value to edit it inline. Press Enter to save or Escape to cancel.</p>
+
+    <table class="table table-bordered table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 50%">Category / Subcategory</th>
+                <th class="text-end">Assigned</th>
+                <th class="text-end">Activity</th>
+                <th class="text-end">Available</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var category in Model.Categories)
+            {
+                <tr class="table-light fw-semibold">
+                    <td>@category.CategoryName</td>
+                    <td class="text-end @AmountClass(category.TotalAssigned)">@FormatAmount(category.TotalAssigned)</td>
+                    <td class="text-end @AmountClass(category.TotalActivity)">@FormatAmount(category.TotalActivity)</td>
+                    <td class="text-end @AmountClass(category.TotalAvailable)">@FormatAmount(category.TotalAvailable)</td>
+                </tr>
+
+                @if (!category.Subcategories.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-muted small ps-4">
+                            No subcategories.
+                            <a asp-controller="Subcategories" asp-action="Create"
+                               asp-route-categoryId="@category.CategoryId">Add one</a>
+                        </td>
+                    </tr>
+                }
+
+                @foreach (var sub in category.Subcategories)
+                {
+                    <tr>
+                        <td class="ps-4">@sub.SubcategoryName</td>
+
+                        @* The assigned-cell is the clickable cell.
+                           data-* attributes are a standard HTML way to embed extra data on an element.
+                           JavaScript reads them to know which subcategory/month/year to update. *@
+                        <td class="text-end assigned-cell"
+                            data-subcategory-id="@sub.SubcategoryId"
+                            data-month="@Model.Month"
+                            data-year="@Model.Year"
+                            title="Click to edit"
+                            style="cursor: pointer;">
+                            <span class="assigned-display @AmountClass(sub.Assigned)">@FormatAmount(sub.Assigned)</span>
+                            <input type="number"
+                                   class="form-control form-control-sm assigned-input d-none"
+                                   step="0.01"
+                                   value="@sub.Assigned"
+                                   style="width: 110px; margin-left: auto;" />
+                        </td>
+
+                        <td class="text-end @AmountClass(sub.Activity)">@FormatAmount(sub.Activity)</td>
+                        <td class="text-end @AmountClass(sub.Available)">@FormatAmount(sub.Available)</td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot class="table-secondary fw-bold">
+            <tr>
+                <td>Totals</td>
+                <td class="text-end @AmountClass(Model.TotalAssigned)">@FormatAmount(Model.TotalAssigned)</td>
+                <td class="text-end @AmountClass(Model.TotalActivity)">@FormatAmount(Model.TotalActivity)</td>
+                <td class="text-end @AmountClass(Model.TotalAvailable)">@FormatAmount(Model.TotalAvailable)</td>
+            </tr>
+        </tfoot>
+    </table>
+}
+
+@section Scripts {
+<script>
+    // querySelectorAll returns every element matching the CSS selector '.assigned-cell'
+    document.querySelectorAll('.assigned-cell').forEach(function(cell) {
+
+        cell.addEventListener('click', function() {
+            // When the cell is clicked, hide the display text and show the input
+            var display = cell.querySelector('.assigned-display');
+            var input   = cell.querySelector('.assigned-input');
+            display.classList.add('d-none');    // d-none is a Bootstrap class meaning display:none
+            input.classList.remove('d-none');
+            input.focus();   // put the cursor in the input immediately
+            input.select();  // highlight the existing value so the user can just type to replace it
+        });
+
+        var input = cell.querySelector('.assigned-input');
+
+        // Save when the user presses Enter or clicks away (blur)
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter')   { e.preventDefault(); saveAssignment(cell, input); }
+            if (e.key === 'Escape')  { cancelEdit(cell, input); }
+        });
+        input.addEventListener('blur', function() {
+            // Small delay so that if the user clicked somewhere else on the page,
+            // the click event fires before we save (avoids race conditions)
+            setTimeout(function() { saveAssignment(cell, input); }, 100);
+        });
+    });
+
+    function cancelEdit(cell, input) {
+        input.classList.add('d-none');
+        cell.querySelector('.assigned-display').classList.remove('d-none');
+    }
+
+    async function saveAssignment(cell, input) {
+        // If the input is already hidden, we already saved — do nothing
+        if (input.classList.contains('d-none')) return;
+
+        var amount = parseFloat(input.value) || 0;
+
+        // fetch() sends an HTTP POST request to the server with JSON data.
+        // async/await works in JavaScript too — it means "wait for the server response"
+        var response = await fetch('/Budget/UpdateAssignment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                subcategoryId: parseInt(cell.dataset.subcategoryId),
+                month:         parseInt(cell.dataset.month),
+                year:          parseInt(cell.dataset.year),
+                amount:        amount
+            })
+        });
+
+        if (response.ok) {
+            // Reload the whole page so Available to Budget and all totals update correctly
+            location.reload();
+        } else {
+            alert('Failed to save. Please try again.');
+            cancelEdit(cell, input);
+        }
+    }
+</script>
+}
