@@ -27,6 +27,8 @@ public class SubcategoriesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Subcategory subcategory)
     {
+        ValidateTarget(subcategory);
+
         if (!ModelState.IsValid)
         {
             await PopulateCategoriesDropdown(subcategory.CategoryId);
@@ -60,6 +62,8 @@ public class SubcategoriesController : Controller
     public async Task<IActionResult> Edit(int id, Subcategory subcategory)
     {
         if (id != subcategory.Id) return BadRequest();
+
+        ValidateTarget(subcategory);
 
         if (!ModelState.IsValid)
         {
@@ -101,5 +105,25 @@ public class SubcategoriesController : Controller
     {
         var categories = await _db.Categories.OrderBy(c => c.Name).ToListAsync();
         ViewBag.Categories = new SelectList(categories, "Id", "Name", selectedId);
+    }
+
+    // Adds cross-field validation errors that data annotations can't express.
+    private void ValidateTarget(Subcategory subcategory)
+    {
+        if (subcategory.TargetAmount.HasValue && !subcategory.TargetPeriod.HasValue)
+            ModelState.AddModelError(nameof(subcategory.TargetPeriod), "Please select a period for the target.");
+
+        if (!subcategory.TargetAmount.HasValue)
+        {
+            // Clear dependent fields so they don't get saved with orphaned values.
+            subcategory.TargetPeriod = null;
+            subcategory.TargetCustomDays = null;
+        }
+
+        if (subcategory.TargetPeriod == Models.TargetPeriod.Custom && !subcategory.TargetCustomDays.HasValue)
+            ModelState.AddModelError(nameof(subcategory.TargetCustomDays), "Please enter the number of days for the custom period.");
+
+        if (subcategory.TargetPeriod != Models.TargetPeriod.Custom)
+            subcategory.TargetCustomDays = null;
     }
 }

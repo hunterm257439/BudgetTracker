@@ -22,6 +22,9 @@ using (var scope = app.Services.CreateScope())
     // This is a simple upgrade path — a production app would use proper EF Migrations instead.
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Categories ADD COLUMN SortOrder INTEGER NOT NULL DEFAULT 0"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN SortOrder INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetAmount REAL NULL"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetPeriod INTEGER NULL"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetCustomDays INTEGER NULL"); } catch { }
 }
 
 if (!app.Environment.IsDevelopment())

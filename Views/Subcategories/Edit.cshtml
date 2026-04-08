@@ -8,6 +8,7 @@
         <h2>Edit Subcategory</h2>
         <form asp-action="Edit" method="post">
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="SortOrder" />
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
             <div class="mb-3">
@@ -24,6 +25,36 @@
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
 
+            <hr />
+            <p class="text-muted small">Target (optional) — set a dollar amount you want to budget on a recurring basis.</p>
+
+            <div class="mb-3">
+                <label asp-for="TargetAmount" class="form-label">Target Amount</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input asp-for="TargetAmount" class="form-control" type="number" min="0.01" step="0.01" placeholder="0.00" />
+                </div>
+                <span asp-validation-for="TargetAmount" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="TargetPeriod" class="form-label">Period</label>
+                <select asp-for="TargetPeriod" id="targetPeriodSelect" class="form-select">
+                    <option value="">-- None --</option>
+                    <option value="0">Weekly</option>
+                    <option value="1">Monthly</option>
+                    <option value="2">Yearly</option>
+                    <option value="3">Custom</option>
+                </select>
+                <span asp-validation-for="TargetPeriod" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3" id="customDaysField" style="display:none">
+                <label asp-for="TargetCustomDays" class="form-label">Every how many days?</label>
+                <input asp-for="TargetCustomDays" class="form-control" type="number" min="1" step="1" placeholder="e.g. 14 for every two weeks" />
+                <span asp-validation-for="TargetCustomDays" class="text-danger"></span>
+            </div>
+
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Save</button>
                 <a asp-controller="Categories" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
@@ -34,4 +65,13 @@
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        const periodSelect = document.getElementById('targetPeriodSelect');
+        const customDaysField = document.getElementById('customDaysField');
+        function toggleCustomDays() {
+            customDaysField.style.display = periodSelect.value === '3' ? '' : 'none';
+        }
+        periodSelect.addEventListener('change', toggleCustomDays);
+        toggleCustomDays();
+    </script>
 }
