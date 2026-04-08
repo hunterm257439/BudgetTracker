@@ -33,14 +33,11 @@ public class SubcategoriesController : Controller
             return View(subcategory);
         }
 
-        // Put the new subcategory at the end of the list within its category.
-        // Max() returns the highest SortOrder already used; adding 1 puts this one after it.
-        // DefaultIfEmpty(0) handles the case where this is the first subcategory (no Max would throw).
-        subcategory.SortOrder = await _db.Subcategories
+        // Put the new subcategory at the end of its category. Nullable cast lets EF Core
+        // translate MAX to SQL; returns null (→ 0) when no subcategories exist yet.
+        subcategory.SortOrder = (await _db.Subcategories
             .Where(s => s.CategoryId == subcategory.CategoryId)
-            .Select(s => s.SortOrder)
-            .DefaultIfEmpty(0)
-            .MaxAsync() + 1;
+            .MaxAsync(s => (int?)s.SortOrder) ?? 0) + 1;
 
         _db.Subcategories.Add(subcategory);
         await _db.SaveChangesAsync();
