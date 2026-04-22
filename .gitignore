@@ -1,0 +1,24 @@
+## Build output
+bin/
+obj/
+
+## SQLite database (local data, should not be in source control)
+*.db
+*.db-shm
+*.db-wal
+
+## User-specific Visual Studio / Rider files
+*.user
+*.suo
+.vs/
+.idea/
+
+## dotnet CLI tools manifest cache
+.dotnet/
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Logs
+*.log
