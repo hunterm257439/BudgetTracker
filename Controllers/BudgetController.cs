@@ -92,7 +92,10 @@ public class BudgetController : Controller
                     SubcategoryName = sub.Name,
                     Assigned = assigned,
                     Activity = activity,
-                    Available = available
+                    Available = available,
+                    TargetAmount = sub.TargetAmount,
+                    Period = sub.TargetPeriod,
+                    TargetDay = sub.TargetDay
                 });
             }
 
@@ -110,12 +113,17 @@ public class BudgetController : Controller
         // and all activity (both inflows and outflows) cumulatively.
         var availableToBudget = accountBalance - categoryRows.Sum(c => c.TotalAvailable);
 
+        // Load the single app-wide settings row (always Id=1).
+        // If it doesn't exist yet (first run before the seed), default to empty settings.
+        var settings = await _db.BudgetSettings.FindAsync(1) ?? new BudgetSettings { Id = 1 };
+
         var viewModel = new BudgetViewModel
         {
             Month = selectedMonth,
             Year = selectedYear,
             AvailableToBudget = availableToBudget,
-            Categories = categoryRows
+            Categories = categoryRows,
+            ExpectedMonthlyIncome = settings.ExpectedMonthlyIncome
         };
 
         return View(viewModel);
@@ -211,9 +219,48 @@ public class BudgetController : Controller
         await _db.SaveChangesAsync();
         return Ok();
     }
+
+    // POST: /Budget/SaveTarget
+    // Saves (or clears) the spending target for a subcategory. Called by the modal on the budget page.
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> SaveTarget([FromBody] TargetUpdate update)
+    {
+        var sub = await _db.Subcategories.FindAsync(update.SubcategoryId);
+        if (sub == null) return NotFound();
+
+        sub.TargetAmount = update.TargetAmount;
+        sub.TargetPeriod = update.Period;
+        sub.TargetDay = update.TargetDay;
+
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+
+    // POST: /Budget/SaveSettings
+    // Saves the user's expected monthly income. Called by JavaScript on the budget page.
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> SaveSettings([FromBody] SettingsUpdate update)
+    {
+        var settings = await _db.BudgetSettings.FindAsync(1);
+        if (settings == null)
+        {
+            _db.BudgetSettings.Add(new BudgetSettings { Id = 1, ExpectedMonthlyIncome = update.ExpectedMonthlyIncome });
+        }
+        else
+        {
+            settings.ExpectedMonthlyIncome = update.ExpectedMonthlyIncome;
+            _db.BudgetSettings.Update(settings);
+        }
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
 }
 
 // A simple data container for the UpdateAssignment endpoint.
 // 'record' is a modern C# shorthand for a class whose only purpose is holding data.
 // The properties are defined right in the constructor-like syntax below.
 public record AssignmentUpdate(int SubcategoryId, int Month, int Year, decimal Amount);
+public record TargetUpdate(int SubcategoryId, decimal? TargetAmount, TargetPeriod? Period, int? TargetDay);
+public record SettingsUpdate(decimal? ExpectedMonthlyIncome);

@@ -117,13 +117,7 @@ public class SubcategoriesController : Controller
         {
             // Clear dependent fields so they don't get saved with orphaned values.
             subcategory.TargetPeriod = null;
-            subcategory.TargetCustomDays = null;
+            subcategory.TargetDay = null;
         }
-
-        if (subcategory.TargetPeriod == Models.TargetPeriod.Custom && !subcategory.TargetCustomDays.HasValue)
-            ModelState.AddModelError(nameof(subcategory.TargetCustomDays), "Please enter the number of days for the custom period.");
-
-        if (subcategory.TargetPeriod != Models.TargetPeriod.Custom)
-            subcategory.TargetCustomDays = null;
     }
 }

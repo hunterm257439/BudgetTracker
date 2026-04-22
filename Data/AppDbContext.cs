@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<BankAccount> BankAccounts { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<BudgetAssignment> BudgetAssignments { get; set; }
+    public DbSet<BudgetSettings> BudgetSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BudgetTracker.Models;
 
@@ -22,9 +23,11 @@ public class Subcategory
     public decimal? TargetAmount { get; set; }
     public TargetPeriod? TargetPeriod { get; set; }
 
-    // Only used when TargetPeriod == Custom; stores the number of days in the custom period.
-    [Range(1, int.MaxValue, ErrorMessage = "Custom period must be at least 1 day.")]
-    public int? TargetCustomDays { get; set; }
+    // Day the target amount is needed: day of month (1–31) for Monthly, day of year (1–366) for Yearly.
+    // Maps to the existing TargetCustomDays column in the database.
+    [Column("TargetCustomDays")]
+    [Range(1, 366, ErrorMessage = "Day must be between 1 and 366.")]
+    public int? TargetDay { get; set; }
 
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     public ICollection<BudgetAssignment> BudgetAssignments { get; set; } = new List<BudgetAssignment>();

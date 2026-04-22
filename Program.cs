@@ -25,6 +25,21 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetAmount REAL NULL"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetPeriod INTEGER NULL"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Subcategories ADD COLUMN TargetCustomDays INTEGER NULL"); } catch { }
+
+    // Create the BudgetSettings table if it doesn't exist yet.
+    // This stores a single row (Id=1) with app-wide settings like expected income.
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS BudgetSettings (
+                Id INTEGER NOT NULL PRIMARY KEY,
+                ExpectedMonthlyIncome REAL NULL
+            )");
+    }
+    catch { }
+
+    // Seed the one-and-only settings row. INSERT OR IGNORE means this is safe to run repeatedly.
+    try { db.Database.ExecuteSqlRaw("INSERT OR IGNORE INTO BudgetSettings (Id, ExpectedMonthlyIncome) VALUES (1, NULL)"); } catch { }
 }
 
 if (!app.Environment.IsDevelopment())

@@ -26,7 +26,7 @@
             </div>
 
             <hr />
-            <p class="text-muted small">Target (optional) — set a dollar amount you want to budget on a recurring basis.</p>
+            <p class="text-muted small">Target (optional) — set a dollar amount you want to have available on a monthly or yearly basis.</p>
 
             <div class="mb-3">
                 <label asp-for="TargetAmount" class="form-label">Target Amount</label>
@@ -41,18 +41,17 @@
                 <label asp-for="TargetPeriod" class="form-label">Period</label>
                 <select asp-for="TargetPeriod" id="targetPeriodSelect" class="form-select">
                     <option value="">-- None --</option>
-                    <option value="0">Weekly</option>
                     <option value="1">Monthly</option>
                     <option value="2">Yearly</option>
-                    <option value="3">Custom</option>
                 </select>
                 <span asp-validation-for="TargetPeriod" class="text-danger"></span>
             </div>
 
-            <div class="mb-3" id="customDaysField" style="display:none">
-                <label asp-for="TargetCustomDays" class="form-label">Every how many days?</label>
-                <input asp-for="TargetCustomDays" class="form-control" type="number" min="1" step="1" placeholder="e.g. 14 for every two weeks" />
-                <span asp-validation-for="TargetCustomDays" class="text-danger"></span>
+            <div class="mb-3" id="targetDayField" style="display:none">
+                <label asp-for="TargetDay" class="form-label" id="targetDayLabel">Day needed</label>
+                <input asp-for="TargetDay" class="form-control" type="number" min="1" max="366" step="1" />
+                <span asp-validation-for="TargetDay" class="text-danger"></span>
+                <div class="form-text" id="targetDayHelp"></div>
             </div>
 
             <div class="d-flex gap-2">
@@ -67,11 +66,23 @@
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
     <script>
         const periodSelect = document.getElementById('targetPeriodSelect');
-        const customDaysField = document.getElementById('customDaysField');
-        function toggleCustomDays() {
-            customDaysField.style.display = periodSelect.value === '3' ? '' : 'none';
+        const targetDayField = document.getElementById('targetDayField');
+        const targetDayLabel = document.getElementById('targetDayLabel');
+        const targetDayHelp = document.getElementById('targetDayHelp');
+        function updateDayField() {
+            if (periodSelect.value === '1') {
+                targetDayField.style.display = '';
+                targetDayLabel.textContent = 'Day of month needed (1–31)';
+                targetDayHelp.textContent = 'The day of the month by which this amount should be available.';
+            } else if (periodSelect.value === '2') {
+                targetDayField.style.display = '';
+                targetDayLabel.textContent = 'Day of year needed (1–366)';
+                targetDayHelp.textContent = 'The day of the year by which this amount should be available (e.g. 180 = June 29).';
+            } else {
+                targetDayField.style.display = 'none';
+            }
         }
-        periodSelect.addEventListener('change', toggleCustomDays);
-        toggleCustomDays();
+        periodSelect.addEventListener('change', updateDayField);
+        updateDayField();
     </script>
 }
